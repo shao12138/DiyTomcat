@@ -28,6 +28,12 @@ public class TestTomcat {
         Assert.assertEquals(html, "Hello DIY Tomcat from how2j.cn");
     }
 
+    @Test
+    public void testaHtml() {
+        String html = getContentString("/a.html");
+        Assert.assertEquals(html, "I am fun, Thanks.");
+    }
+
     private String getContentString(String uri) {
         String url = StrUtil.format("http://{}:{}{}", ip, port, uri);
         String content = MiniBrowser.getContentString(url);
