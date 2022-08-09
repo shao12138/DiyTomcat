@@ -1,11 +1,12 @@
 package com.ysy.diytomcat.test;
 
 
+import cn.hutool.core.date.*;
 import cn.hutool.core.util.*;
 import com.ysy.diytomcat.util.MiniBrowser;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+
+import java.util.concurrent.*;
 
 public class TestTomcat {
     private static int port = 18080;
@@ -25,13 +26,48 @@ public class TestTomcat {
     @Test
     public void testHelloTomcat() {
         String html = getContentString("/");
-        Assert.assertEquals(html, "Hello DIY Tomcat from how2j.cn");
+        Assert.assertEquals(html, "Hello DIY Tomcat");
     }
 
     @Test
     public void testaHtml() {
         String html = getContentString("/a.html");
         Assert.assertEquals(html, "I am fun, Thanks.");
+    }
+
+    @Test
+    public void testTimeConsumeHtml() throws InterruptedException {
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(20, 20, 60, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<Runnable>(10));
+        TimeInterval timeInterval = DateUtil.timer();
+        //连续执行3个任务，可以简单地理解成3个任务同时开始
+        for (int i = 0; i < 3; i++) {
+            threadPool.execute(new Runnable() {
+                public void run() {
+                    getContentString("/timeConsume.html");
+                }
+            });
+        }
+        //shutdown 尝试关闭线程池，但是如果 线程池里有任务在运行，就不会强制关闭，直到任务都结束了，才关闭。
+        threadPool.shutdown();
+        //会给线程池1个小时的时间去执行，如果超过1个小时了也会返回，如果在一个小时内任务结束了，就会马上返回。
+        threadPool.awaitTermination(1, TimeUnit.HOURS);
+
+        long duration = timeInterval.intervalMs();
+
+        Assert.assertTrue(duration < 3000);
+    }
+
+    @Test
+    public void testbIndex() {
+        String html = getContentString("/b/index.html");
+        Assert.assertEquals(html, "Hello DIY Tomcat from index.html@b");
+    }
+
+    @Test
+    public void testaIndex() {
+        String html = getContentString("/a/index.html");
+        Assert.assertEquals(html, "Hello DIY Tomcat from index.html@a");
     }
 
     private String getContentString(String uri) {

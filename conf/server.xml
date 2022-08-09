@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<Server>-->
+<!--    <Context path="/b" docBase="E:/IDEA/workspace/DiyTomcat/webapps/b"/>-->
+<!--</Server>-->
+<Server>
+    <Host name="localhost">
+        <Context path="/b" docBase="E:/IDEA/workspace/DiyTomcat/webapps/b"/>
+    </Host>
+</Server>

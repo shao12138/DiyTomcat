@@ -1,9 +1,12 @@
 package com.ysy.diytomcat;
 
 import cn.hutool.core.io.*;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
 import cn.hutool.log.LogFactory;
 import cn.hutool.system.*;
+import com.ysy.diytomcat.catalina.Context;
+import com.ysy.diytomcat.catalina.Host;
 import com.ysy.diytomcat.http.*;
 import com.ysy.diytomcat.util.*;
 
@@ -13,59 +16,73 @@ import java.net.Socket;
 import java.util.*;
 
 public class Bootstrap {
+    //声明一个 contextMap 用于存放路径和Context 的映射。
+    public static Map<String, Context> contextMap = new HashMap<>();
 
     public static void main(String[] args) {
 
         try {
             logJVM();
             int port = 18080;
-            //把端口占用提示信息注释掉，当真正异常发生的时候，就会打印出来
-//            if (!NetUtil.isUsableLocalPort(port)) {
-//                System.out.println(port + " 端口已经被占用了!");
-//                return;
-//            }
+            Host host = new Host();
             ServerSocket ss = new ServerSocket(port);
 
             while (true) {
                 Socket s = ss.accept();
-                Request request = new Request(s);
-                System.out.println("浏览器的输入信息： \r\n" + request.getRequestString());
-                System.out.println("uri： " + request.getUri());
+                Runnable r = new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Request request = new Request(s, host);
+                            System.out.println("浏览器的输入信息： \r\n" + request.getRequestString());
+                            System.out.println("uri： " + request.getUri());
 
-                Response response = new Response();
-                String uri = request.getUri();
-                //首先判断 uri 是否为空，如果为空就不处理了。 什么情况为空呢？ 在 TestTomcat 里的 NetUtil.isUsableLocalPort(port) 这段代码就会导致为空。
-                if (null == uri)
-                    continue;
-                System.out.println(uri);
-                //如果是 "/", 那么依然返回原字符串。
-                if ("/".equals(uri)) {
-                    String html = "Hello DIY Tomcat from how2j.cn";
-                    response.getWriter().println(html);
-                } else {
-                    //接着处理文件，首先取出文件名，比如访问的是 /a.html, 那么文件名就是 a.html
-                    String fileName = StrUtil.removePrefix(uri, "/");
-                    //然后获取对应的文件对象 file
-                    File file = FileUtil.file(Constant.rootFolder, fileName);
-                    if (file.exists()) {
-                        //如果文件存在，那么获取内容并通过 response.getWriter 打印。
-                        String fileContent = FileUtil.readUtf8String(file);
-                        response.getWriter().println(fileContent);
-                    } else {
-                        //如果文件不存在，那么打印 File Not Found。
-                        response.getWriter().println("File Not Found");
+                            Response response = new Response();
+                            String uri = request.getUri();
+                            //首先判断 uri 是否为空，如果为空就不处理了。 什么情况为空呢？ 在 TestTomcat 里的 NetUtil.isUsableLocalPort(port) 这段代码就会导致为空。
+                            if (null == uri)
+                                return;
+                            System.out.println(uri);
+                            //如果是 "/", 那么依然返回原字符串。
+                            Context context = request.getContext();
+                            if ("/".equals(uri)) {
+                                String html = "Hello DIY Tomcat";
+                                response.getWriter().println(html);
+                            } else {
+                                //接着处理文件，首先取出文件名，比如访问的是 /a.html, 那么文件名就是 a.html
+                                String fileName = StrUtil.removePrefix(uri, "/");
+                                //然后获取对应的文件对象 file,在判断 uri 之前获取当前context对象
+                                File file = FileUtil.file(context.getDocBase(), fileName);
+                                if (file.exists()) {
+                                    //如果文件存在，那么获取内容并通过 response.getWriter 打印。
+                                    String fileContent = FileUtil.readUtf8String(file);
+                                    response.getWriter().println(fileContent);
+                                    if (fileName.equals("timeConsume.html")) {
+                                        ThreadUtil.sleep(1000);
+                                    }
+                                } else {
+                                    //如果文件不存在，那么打印 File Not Found。
+                                    response.getWriter().println("File Not Found");
+                                }
+                            }
+                            //把返回 200 响应重构到了一个独立的方法里，看上去更清爽了。
+                            handle200(s, response);
+                        } catch (IOException e) {
+                            LogFactory.get().error(e);
+                            e.printStackTrace();
+                        }
                     }
-                }
-                //把返回 200 响应重构到了一个独立的方法里，看上去更清爽了。
-                handle200(s, response);
+                };
+                ThreadPoolUtil.run(r);
             }
         } catch (IOException e) {
             LogFactory.get().error(e);
             e.printStackTrace();
         }
     }
+
     private static void logJVM() {
-        Map<String,String> infos = new LinkedHashMap<>();
+        Map<String, String> infos = new LinkedHashMap<>();
         infos.put("Server version", "How2J DiyTomcat/1.0.1");
         infos.put("Server built", "2020-04-08 10:20:22");
         infos.put("Server number", "1.0.1");
@@ -78,7 +95,7 @@ public class Bootstrap {
 
         Set<String> keys = infos.keySet();
         for (String key : keys) {
-            LogFactory.get().info(key+":\t\t" + infos.get(key));
+            LogFactory.get().info(key + ":\t\t" + infos.get(key));
         }
     }
     private static void handle200(Socket s, Response response) throws IOException {
