@@ -12,11 +12,14 @@ public class Host {
     private String name;
     //contextMap 其实就是本来在 bootstrap 里的 contextMap , 只不过挪到这里来了。
     private Map<String, Context> contextMap;
+    //增加 Engine 属性
+    private Engine engine;
 
-    public Host() {
+    public Host(String name, Engine engine) {
         this.contextMap = new HashMap<>();
         this.name = ServerXMLUtil.getHostName();
-
+        //在构造方法中接受它
+        this.engine = engine;
         scanContextsOnWebAppsFolder();
         scanContextsInServerXML();
 
