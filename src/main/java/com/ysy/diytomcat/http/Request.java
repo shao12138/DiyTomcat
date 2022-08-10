@@ -56,7 +56,7 @@ public class Request {
     //解析 http请求字符串， 这里面就调用了 MiniBrowser里重构的 readBytes 方法。
     private void parseHttpRequest() throws IOException {
         InputStream is = this.socket.getInputStream();
-        byte[] bytes = MiniBrowser.readBytes(is);
+        byte[] bytes = MiniBrowser.readBytes(is,false);
         requestString = new String(bytes, "utf-8");
     }
 

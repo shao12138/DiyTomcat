@@ -60,9 +60,10 @@ public class Server {
                                 String extName = FileUtil.extName(file);
                                 String mimeType = WebXMLUtil.getMimeType(extName);
                                 response.setContentType(mimeType);
-                                String fileContent = FileUtil.readUtf8String(file);
-                                response.getWriter().println(fileContent);
-
+//                                String fileContent = FileUtil.readUtf8String(file);
+//                                response.getWriter().println(fileContent);
+                                byte body[] = FileUtil.readBytes(file);
+                                response.setBody(body);
                                 if (fileName.equals("timeConsume.html")) {
                                     ThreadUtil.sleep(1000);
                                 }
