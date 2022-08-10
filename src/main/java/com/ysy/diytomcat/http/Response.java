@@ -17,6 +17,10 @@ public class Response {
         this.contentType = "text/html";
     }
 
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
     public String getContentType() {
         return contentType;
     }
