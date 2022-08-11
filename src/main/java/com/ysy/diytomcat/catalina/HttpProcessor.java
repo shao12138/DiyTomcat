@@ -3,13 +3,13 @@ package com.ysy.diytomcat.catalina;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.LogFactory;
 import com.ysy.diytomcat.http.Request;
 import com.ysy.diytomcat.http.Response;
 import com.ysy.diytomcat.util.Constant;
 import com.ysy.diytomcat.util.WebXMLUtil;
-import com.ysy.diytomcat.webappservlet.HelloServlet;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,13 +24,18 @@ public class HttpProcessor {
                 return;
 
             Context context = request.getContext();
+            String servletClassName = context.getServletClassName(uri);
 
+            if(null!=servletClassName){
+                Object servletObject = ReflectUtil.newInstance(servletClassName);
+                ReflectUtil.invoke(servletObject, "doGet", request, response);
+            }
             if ("/500.html".equals(uri)) {
                 throw new Exception("this is a deliberately created exception");
             }
             if ("/hello".equals(uri)) {
-                HelloServlet helloServlet = new HelloServlet();
-                helloServlet.doGet(request, response);
+//                HelloServlet helloServlet = new HelloServlet();
+//                helloServlet.doGet(request, response);
             } else {
                 if ("/".equals(uri))
                     uri = WebXMLUtil.getWelcomeFile(request.getContext());
