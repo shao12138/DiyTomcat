@@ -9,6 +9,7 @@ import com.ysy.diytomcat.http.Request;
 import com.ysy.diytomcat.http.Response;
 import com.ysy.diytomcat.util.Constant;
 import com.ysy.diytomcat.util.WebXMLUtil;
+import com.ysy.diytomcat.webappservlet.HelloServlet;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,26 +28,30 @@ public class HttpProcessor {
             if ("/500.html".equals(uri)) {
                 throw new Exception("this is a deliberately created exception");
             }
-
-            if ("/".equals(uri))
-                uri = WebXMLUtil.getWelcomeFile(request.getContext());
-
-            String fileName = StrUtil.removePrefix(uri, "/");
-            File file = FileUtil.file(context.getDocBase(), fileName);
-
-            if (file.exists()) {
-                String extName = FileUtil.extName(file);
-                String mimeType = WebXMLUtil.getMimeType(extName);
-                response.setContentType(mimeType);
-
-                byte body[] = FileUtil.readBytes(file);
-                response.setBody(body);
-
-                if (fileName.equals("timeConsume.html"))
-                    ThreadUtil.sleep(1000);
+            if ("/hello".equals(uri)) {
+                HelloServlet helloServlet = new HelloServlet();
+                helloServlet.doGet(request, response);
             } else {
-                handle404(s, uri);
-                return;
+                if ("/".equals(uri))
+                    uri = WebXMLUtil.getWelcomeFile(request.getContext());
+
+                String fileName = StrUtil.removePrefix(uri, "/");
+                File file = FileUtil.file(context.getDocBase(), fileName);
+
+                if (file.exists()) {
+                    String extName = FileUtil.extName(file);
+                    String mimeType = WebXMLUtil.getMimeType(extName);
+                    response.setContentType(mimeType);
+
+                    byte body[] = FileUtil.readBytes(file);
+                    response.setBody(body);
+
+                    if (fileName.equals("timeConsume.html"))
+                        ThreadUtil.sleep(1000);
+                } else {
+                    handle404(s, uri);
+                    return;
+                }
             }
             handle200(s, response);
         } catch (Exception e) {
