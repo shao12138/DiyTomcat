@@ -1,22 +1,14 @@
 package com.ysy.diytomcat.catalina;
 
+import cn.hutool.core.date.*;
 import com.ysy.diytomcat.util.*;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.*;
 import cn.hutool.log.LogFactory;
 import cn.hutool.system.SystemUtil;
 import com.ysy.diytomcat.http.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.ServerSocket;
+import java.io.*;
 import java.net.Socket;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Server {
     private Service service;
@@ -26,73 +18,14 @@ public class Server {
     }
 
     public void start() {
+        TimeInterval timeInterval = DateUtil.timer();
         logJVM();
         init();
+        LogFactory.get().info("Server startup in {} ms", timeInterval.intervalMs());
     }
 
     private void init() {
-        try {
-            int port = 18080;
-            ServerSocket ss = new ServerSocket(port);
-
-            while (true) {
-                Socket s = ss.accept();
-                Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Request request = new Request(s, service);
-                            Response response = new Response();
-                            String uri = request.getUri();
-                            if (null == uri)
-                                return;
-                            System.out.println("uri:" + uri);
-
-                            Context context = request.getContext();
-                            if ("/500.html".equals(uri)) {
-                                throw new Exception("this is a deliberately created exception");
-                            }
-                            if ("/".equals(uri))
-                                uri = WebXMLUtil.getWelcomeFile(request.getContext());
-                            String fileName = StrUtil.removePrefix(uri, "/");
-                            File file = FileUtil.file(context.getDocBase(), fileName);
-                            if (file.exists()) {
-                                String extName = FileUtil.extName(file);
-                                String mimeType = WebXMLUtil.getMimeType(extName);
-                                response.setContentType(mimeType);
-//                                String fileContent = FileUtil.readUtf8String(file);
-//                                response.getWriter().println(fileContent);
-                                byte body[] = FileUtil.readBytes(file);
-                                response.setBody(body);
-                                if (fileName.equals("timeConsume.html")) {
-                                    ThreadUtil.sleep(1000);
-                                }
-
-                            } else {
-                                handle404(s, uri);
-                                return;
-                            }
-                            handle200(s, response);
-                        } catch (Exception e) {
-                            LogFactory.get().error(e);
-                            handle500(s, e);
-                        } finally {
-                            try {
-                                if (!s.isClosed())
-                                    s.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                };
-
-                ThreadPoolUtil.run(r);
-            }
-        } catch (IOException e) {
-            LogFactory.get().error(e);
-            e.printStackTrace();
-        }
+        service.start();
     }
 
     private static void logJVM() {

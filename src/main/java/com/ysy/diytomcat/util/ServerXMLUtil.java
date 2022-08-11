@@ -1,5 +1,6 @@
 package com.ysy.diytomcat.util;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import com.ysy.diytomcat.catalina.*;
 import org.jsoup.Jsoup;
@@ -28,6 +29,7 @@ public class ServerXMLUtil {
         }
         return result;
     }
+
     //正好之前的 getHostName 不用了，改造成 getServiceName
     public static String getServiceName() {
         String xml = FileUtil.readUtf8String(Constant.serverXmlFile);
@@ -35,6 +37,7 @@ public class ServerXMLUtil {
         Element host = d.select("Service").first();
         return host.attr("name");
     }
+
     public static String getHostName() {
         String xml = FileUtil.readUtf8String(Constant.serverXmlFile);
         Document d = Jsoup.parse(xml);
@@ -42,6 +45,7 @@ public class ServerXMLUtil {
         Element host = d.select("Host").first();
         return host.attr("name");
     }
+
     public static String getEngineDefaultHost() {
         String xml = FileUtil.readUtf8String(Constant.serverXmlFile);
         Document d = Jsoup.parse(xml);
@@ -60,6 +64,20 @@ public class ServerXMLUtil {
             String name = e.attr("name");
             Host host = new Host(name, engine);
             result.add(host);
+        }
+        return result;
+    }
+
+    public static List<Connector> getConnectors(Service service) {
+        List<Connector> result = new ArrayList<>();
+        String xml = FileUtil.readUtf8String(Constant.serverXmlFile);
+        Document d = Jsoup.parse(xml);
+        Elements es = d.select("Connector");
+        for (Element e : es) {
+            int port = Convert.toInt(e.attr("port"));
+            Connector c = new Connector(service);
+            c.setPort(port);
+            result.add(c);
         }
         return result;
     }
