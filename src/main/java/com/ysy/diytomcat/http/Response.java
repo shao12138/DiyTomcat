@@ -10,6 +10,7 @@ public class Response extends BaseResponse {
     //contentType就是对应响应头信息里的 Content-type ，默认是 "text/html"。
     private String contentType;
     private byte[] body;
+    private int status;
 
     public Response() {
         //用于提供一个 getWriter() 方法，这样就可以像 HttpServletResponse 那样写成 response.getWriter().println(); 这种风格了。
@@ -37,5 +38,13 @@ public class Response extends BaseResponse {
             body = content.getBytes("utf-8");
         }
         return body;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public int getStatus() {
+        return status;
     }
 }
